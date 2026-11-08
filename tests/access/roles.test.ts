@@ -8,7 +8,7 @@ import {
     siteScopedUpdate,
     siteScopedDelete,
     userMayAccessSite,
-} from './roles'
+} from '../../src/access/roles'
 
 function makeReq(user?: { role: string; site?: string | number | { id: string | number } }, internalAuth = false) {
     return {

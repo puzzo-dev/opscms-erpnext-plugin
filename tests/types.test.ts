@@ -1,6 +1,6 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
-import { isInternalAuth } from './types'
+import { isInternalAuth } from '../src/types'
 
 function makeReq(header?: string) {
     return {

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { slugify, stripHtml, getUpsertKeyMapping, erpFetchFields, describeRelationship, chooseMatchField, buildRelatedDocData, type ERPNextSyncRule } from './transforms'
+import { slugify, stripHtml, getUpsertKeyMapping, erpFetchFields, describeRelationship, chooseMatchField, buildRelatedDocData, type ERPNextSyncRule } from '../../src/sync/transforms'
 
 describe('slugify', () => {
     it('lowercases and hyphenates a display name', () => {

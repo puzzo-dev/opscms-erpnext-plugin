@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { createHmac, randomBytes } from 'node:crypto'
-import { verifyERPNextWebhookSignature } from './webhookSignature'
+import { verifyERPNextWebhookSignature } from '../../src/utils/webhookSignature'
 
 describe('webhookSignature', () => {
     const secret = randomBytes(32).toString('hex')

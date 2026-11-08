@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 
-import { validateErpUrl, isSafeOutboundHost, isSafeErpHost, privateErpUrlsAllowed } from './ssrfGuard.js'
+import { validateErpUrl, isSafeOutboundHost, isSafeErpHost, privateErpUrlsAllowed } from '../../src/utils/ssrfGuard.js'
 
 /**
  * Server-Side Request Forgery guard for outbound ERPNext calls.

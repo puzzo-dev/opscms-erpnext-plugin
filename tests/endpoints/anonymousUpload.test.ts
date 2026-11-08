@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 
-import { anonymousUploadEndpoint } from './anonymousUpload.js'
+import { anonymousUploadEndpoint } from '../../src/endpoints/anonymousUpload.js'
 
 /**
  * The anonymous upload endpoint takes a file from an unauthenticated visitor —

@@ -1,6 +1,6 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
-import { checkRateLimit, getClientIp, __resetRateLimitStore } from './rateLimit'
+import { checkRateLimit, getClientIp, __resetRateLimitStore } from '../../src/utils/rateLimit'
 
 function makeHeaders(init?: Record<string, string>): Headers {
     return new Headers(init)

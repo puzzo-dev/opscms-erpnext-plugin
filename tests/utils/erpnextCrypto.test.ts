@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, after, afterEach } from 'node:test'
 import assert from 'node:assert'
-import { encryptCredential, decryptCredential, __resetEncryptionKey } from './erpnextCrypto'
+import { encryptCredential, decryptCredential, __resetEncryptionKey } from '../../src/utils/erpnextCrypto'
 
 const TEST_KEY = 'a'.repeat(64)
 
@@ -54,7 +54,7 @@ describe('erpnextCrypto', () => {
 })
 
 describe('credentials through a host that keeps a key per site', async () => {
-    const { bindCredentialHost, decryptCredential, encryptCredential, encryptCredentialForSite } = await import('./erpnextCrypto')
+    const { bindCredentialHost, decryptCredential, encryptCredential, encryptCredentialForSite } = await import('../../src/utils/erpnextCrypto')
     afterEach(() => bindCredentialHost(undefined))
 
     it('uses the host to encrypt for a site and to decrypt, and still reads what the package wrote before', async () => {
