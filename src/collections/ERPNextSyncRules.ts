@@ -177,7 +177,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                         width: '50%',
                                         components: {
                                             Field: {
-                                                path: 'payload-erpnext-plugin/components/ERPNextDocTypeSelect',
+                                                path: 'opscms-erpnext-plugin/components/ERPNextDocTypeSelect',
                                                 exportName: 'ERPNextDocTypeSelect',
                                             },
                                         },
@@ -193,7 +193,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                         width: '50%',
                                         components: {
                                             Field: {
-                                                path: 'payload-erpnext-plugin/components/CmsCollectionSelect',
+                                                path: 'opscms-erpnext-plugin/components/CmsCollectionSelect',
                                                 exportName: 'CmsCollectionSelect',
                                             },
                                         },
@@ -259,7 +259,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                                 width: '40%',
                                                 components: {
                                                     Field: {
-                                                        path: 'payload-erpnext-plugin/components/ERPNextTargetFieldSelect',
+                                                        path: 'opscms-erpnext-plugin/components/ERPNextTargetFieldSelect',
                                                         exportName: 'ERPNextTargetFieldSelect',
                                                     },
                                                 },
@@ -275,7 +275,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                                 description: 'Payload field name in the target collection.',
                                                 components: {
                                                     Field: {
-                                                        path: 'payload-erpnext-plugin/components/CmsCollectionFieldSelect',
+                                                        path: 'opscms-erpnext-plugin/components/CmsCollectionFieldSelect',
                                                         exportName: 'CmsCollectionFieldSelect',
                                                     },
                                                 },
@@ -333,7 +333,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                                 condition: (_data, siblingData) => siblingData?.transform === 'lookup',
                                                 components: {
                                                     Field: {
-                                                        path: 'payload-erpnext-plugin/components/CmsCollectionSelect',
+                                                        path: 'opscms-erpnext-plugin/components/CmsCollectionSelect',
                                                         exportName: 'CmsCollectionSelect',
                                                     },
                                                 },
@@ -348,7 +348,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                                 description: 'Field in that collection compared to the ERPNext value (e.g. name). With "Link to the related document" this is optional — leave it blank to use the collection\'s own title field, and set it only when the ERPNext value lives somewhere else.',
                                                 components: {
                                                     Field: {
-                                                        path: 'payload-erpnext-plugin/components/CmsLookupFieldSelect',
+                                                        path: 'opscms-erpnext-plugin/components/CmsLookupFieldSelect',
                                                         exportName: 'CmsLookupFieldSelect',
                                                     },
                                                 },
@@ -379,7 +379,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                                 width: '50%',
                                                 components: {
                                                     Field: {
-                                                        path: 'payload-erpnext-plugin/components/CmsCollectionFieldSelect',
+                                                        path: 'opscms-erpnext-plugin/components/CmsCollectionFieldSelect',
                                                         exportName: 'CmsCollectionFieldSelect',
                                                     },
                                                 },
@@ -419,7 +419,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                 description: 'Payload date field stamped with the time of every successful sync, including when the record already existed and was updated (e.g. erp_last_synced_at). This is when this system last pulled the record — not ERPNext\'s own "modified" date, which you would map as a normal field. Leave blank to disable.',
                                 components: {
                                     Field: {
-                                        path: 'payload-erpnext-plugin/components/CmsCollectionFieldSelect',
+                                        path: 'opscms-erpnext-plugin/components/CmsCollectionFieldSelect',
                                         exportName: 'CmsCollectionFieldSelect',
                                     },
                                 },
@@ -433,7 +433,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                 description: 'Payload field on the target collection to write the mapped status to (e.g. erp_sync_status). Leave blank to turn off status sync for this rule — the fields below only apply once this is set.',
                                 components: {
                                     Field: {
-                                        path: 'payload-erpnext-plugin/components/CmsCollectionFieldSelect',
+                                        path: 'opscms-erpnext-plugin/components/CmsCollectionFieldSelect',
                                         exportName: 'CmsCollectionFieldSelect',
                                     },
                                 },
@@ -485,7 +485,7 @@ export const ERPNextSyncRules: CollectionConfig = {
                                                 condition: (data) => Boolean((data as Record<string, unknown>)?.customerGroupField),
                                                 components: {
                                                     Field: {
-                                                        path: 'payload-erpnext-plugin/components/ERPNextCustomerGroupSelect',
+                                                        path: 'opscms-erpnext-plugin/components/ERPNextCustomerGroupSelect',
                                                         exportName: 'ERPNextCustomerGroupSelect',
                                                     },
                                                 },

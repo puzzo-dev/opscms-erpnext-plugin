@@ -166,7 +166,7 @@ export function erpnextPlugin(options: ERPNextPluginOptions = {}): Plugin {
                                     required: true, 
                                     admin: { 
                                         description: 'ERPNext DocType (e.g. Customer, Sales Order)',
-                                        components: { Field: 'payload-erpnext-plugin/components/ERPNextDocTypeSelect' }
+                                        components: { Field: 'opscms-erpnext-plugin/components/ERPNextDocTypeSelect' }
                                     } 
                                 },
                                 { 
@@ -201,7 +201,7 @@ export function erpnextPlugin(options: ERPNextPluginOptions = {}): Plugin {
                                             type: 'text',
                                             required: true,
                                             admin: {
-                                                components: { Field: 'payload-erpnext-plugin/components/ERPNextTargetFieldSelect' }
+                                                components: { Field: 'opscms-erpnext-plugin/components/ERPNextTargetFieldSelect' }
                                             }
                                         },
                                         {
@@ -211,7 +211,7 @@ export function erpnextPlugin(options: ERPNextPluginOptions = {}): Plugin {
                                             label: 'Source Value',
                                             admin: {
                                                 description: 'A field from the workflow\'s trigger collection, a literal value, or a variable from an earlier step (e.g. {{erp_name}}).',
-                                                components: { Field: 'payload-erpnext-plugin/components/WorkflowSourceSelect' },
+                                                components: { Field: 'opscms-erpnext-plugin/components/WorkflowSourceSelect' },
                                             }
                                         }
                                     ]

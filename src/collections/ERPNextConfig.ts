@@ -398,7 +398,7 @@ export const ERPNextConfig: CollectionConfig = {
                             admin: {
                                 components: {
                                     Field: {
-                                        path: 'payload-erpnext-plugin/components/ERPNextConnectPanel',
+                                        path: 'opscms-erpnext-plugin/components/ERPNextConnectPanel',
                                         exportName: 'ERPNextConnectPanelField',
                                     },
                                 },
@@ -470,7 +470,7 @@ export const ERPNextConfig: CollectionConfig = {
                                 description: 'Company selected for this site.',
                                 components: {
                                     Field: {
-                                        path: 'payload-erpnext-plugin/components/CompanySelect',
+                                        path: 'opscms-erpnext-plugin/components/CompanySelect',
                                         exportName: 'CompanySelectField',
                                     },
                                 },

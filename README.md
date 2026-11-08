@@ -1,4 +1,4 @@
-# payload-erpnext-plugin
+# opscms-erpnext-plugin
 
 A self-contained **Payload CMS 3.x plugin** for secure, multi-tenant ERPNext integrations.
 
@@ -38,9 +38,9 @@ It provides:
 ## Installation
 
 ```bash
-npm install payload-erpnext-plugin
+npm install opscms-erpnext-plugin
 # or
-pnpm add payload-erpnext-plugin
+pnpm add opscms-erpnext-plugin
 ```
 
 ---
@@ -53,7 +53,7 @@ Import and register `erpnextPlugin`, passing the host application's action regis
 
 ```typescript
 import { buildConfig } from 'payload'
-import { erpnextPlugin } from 'payload-erpnext-plugin'
+import { erpnextPlugin } from 'opscms-erpnext-plugin'
 import { actionRegistry } from './lib/actionRegistry' // your host application's registry
 
 export default buildConfig({
@@ -121,7 +121,7 @@ A `state` param exists to protect OAuth flows that redirect the browser out to a
 
 ```typescript
 import { buildConfig } from 'payload'
-import { erpnextPlugin } from 'payload-erpnext-plugin'
+import { erpnextPlugin } from 'opscms-erpnext-plugin'
 import { actionRegistry, emitSystemEvent, systemEvents, isInternalAuth } from './lib/host' // your host app
 
 export default buildConfig({

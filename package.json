@@ -1,5 +1,5 @@
 {
-  "name": "payload-erpnext-plugin",
+  "name": "opscms-erpnext-plugin",
   "version": "2.5.0",
   "description": "Payload CMS plugin for ERPNext integration. Multi-doctype form workflows, credential management, proxy endpoints, and async job forwarding.",
   "main": "dist/index.js",
