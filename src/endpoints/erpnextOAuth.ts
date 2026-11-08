@@ -1,6 +1,5 @@
 import type { Endpoint, CollectionSlug } from 'payload'
 import { randomUUID } from 'crypto'
-import { encryptCredential } from '../utils/erpnextCrypto'
 import { getUserSiteId, getUserOrgId, type UserWithRole } from '../types'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
 
@@ -335,9 +334,9 @@ export const erpnextOAuthAutoConnectEndpoint: Endpoint = {
                 data: {
                     authMethod: 'oauth',
                     oauthClientId: clientId,
-                    oauthClientSecret: encryptCredential(clientSecret),
-                    oauthAccessToken: encryptCredential(tokenBody.access_token),
-                    oauthRefreshToken: tokenBody.refresh_token ? encryptCredential(tokenBody.refresh_token) : undefined,
+                    oauthClientSecret: clientSecret, // encrypted by the collection's own hook, under the site's key
+                    oauthAccessToken: tokenBody.access_token,
+                    oauthRefreshToken: tokenBody.refresh_token ? tokenBody.refresh_token : undefined,
                     oauthExpiresAt: expiresAt,
                     connectionStatus: 'connected',
                 } as any,
@@ -391,9 +390,9 @@ export async function refreshOAuthToken(
             collection: 'erpnext-config' as unknown as CollectionSlug,
             id: configId,
             data: {
-                oauthAccessToken: encryptCredential(body.access_token),
+                oauthAccessToken: body.access_token,
                 // Frappe may or may not rotate the refresh token — keep the existing one if it doesn't return a new one.
-                ...(body.refresh_token ? { oauthRefreshToken: encryptCredential(body.refresh_token) } : {}),
+                ...(body.refresh_token ? { oauthRefreshToken: body.refresh_token } : {}),
                 oauthExpiresAt: expiresAt,
             } as any,
             overrideAccess: true,

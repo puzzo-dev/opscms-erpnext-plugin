@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.5.0
+
+### Added
+
+- **Credentials can follow the host's per-site keys.** A host can pass `host.credentials` (an `encrypt(payload, site, plaintext)` and a
+  `decrypt(stored)`) and the package then encrypts each site's ERP API key and secret, OAuth client secret and tokens, and webhook
+  secret under THAT site's key, and reads them back through the host (which also reads the values this package wrote before). Without
+  the binding nothing changes: the package keeps using `ERPNEXT_ENCRYPTION_KEY` as it always did, so this release can be installed
+  before a host is ready for it.
+
+- **A development switch for a local ERPNext.** With `ERPNEXT_ALLOW_PRIVATE_URLS=true` the ERPNext address may be `localhost`, `*.localhost` or a
+  literal private IP, so a developer can test against an ERPNext on their own machine. It is never honoured when `NODE_ENV` is `production`, never
+  opens the link-local range (cloud metadata) or resolves names, and applies to the ERPNext address only (the general guard the webhook channel uses
+  is unchanged). Off by default, so nothing changes without it.
+
+### Changed
+
+- The OAuth connect and token-refresh endpoints now hand the tokens to the collection as they are, and the collection's own hooks
+  encrypt them (they already did, so the stored result is the same), which is what lets a site's key apply to them.
+
+## Unreleased
+
+### Added
+
+- The package carries its own logo (`icon.png`, the OpsCloud mark), listed in `files`, so the platform shows it on the plugin's card from the
+  package the registry delivered. The platform now presents this plugin as "Opscloud Sync"; its key (`erpnext-sync`) does not change.
+
 ## 2.4.4
 
 ### Fixed

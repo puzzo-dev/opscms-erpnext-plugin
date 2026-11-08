@@ -2,7 +2,8 @@
  * SSRF guard for outbound ERPNext requests.
  *
  * CANONICAL SOURCE: `@ivarse/shared-cms/ssrf-guard` holds the authoritative
- * implementation; this file is a byte-identical copy kept because this plugin
+ * implementation; this file is a copy (apart from the "Development switch for the
+ * ERPNext address only" section, which exists only here) kept because this plugin
  * is a separately published package and cannot depend on the workspace-only
  * `@ivarse/shared-cms`. When the rule changes, update the shared-cms version
  * first, then mirror it here. The CMS's `src/lib/ssrfGuard.ts` is a thin
@@ -125,6 +126,35 @@ export async function isSafeOutboundHost(hostname: string): Promise<boolean> {
     }
 }
 
+// ── Development switch for the ERPNext address only ───────────────────
+
+/**
+ * Lets a developer point the platform at an ERPNext running on their own machine.
+ *
+ * Off unless `ERPNEXT_ALLOW_PRIVATE_URLS=true`, and never honoured when `NODE_ENV` is `production`, so it cannot be left on in a
+ * deployment by accident. Even when on it opens very little: `localhost`, `*.localhost` and literal private addresses only (names
+ * are not resolved, so a public name cannot be pointed inward), and never the link-local range that holds the cloud metadata
+ * address. It applies to the ERPNext connection address only: the general guard above, which the webhook channel also uses, is
+ * untouched.
+ */
+export function privateErpUrlsAllowed(): boolean {
+    return process.env.ERPNEXT_ALLOW_PRIVATE_URLS === 'true' && process.env.NODE_ENV !== 'production'
+}
+
+function isDevelopmentErpHost(hostname: string): boolean {
+    const host = hostname.replace(/^\[|\]$/g, '').toLowerCase()
+    if (host === 'localhost' || host.endsWith('.localhost')) return true
+    if (net.isIPv4(host)) return !inIpv4Range(host, '169.254.0.0', 16)
+    if (net.isIPv6(host)) return host === '::1'
+    return false
+}
+
+/** Whether the ERPNext address may be fetched: a public host, or (development switch only) a local one. */
+export async function isSafeErpHost(hostname: string): Promise<boolean> {
+    if (await isSafeOutboundHost(hostname)) return true
+    return privateErpUrlsAllowed() && isDevelopmentErpHost(hostname)
+}
+
 // ── Public API ────────────────────────────────────────────────────────
 
 /**
@@ -175,6 +205,6 @@ export async function validateErpUrl(rawUrl: string): Promise<string | null> {
     }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
     if (parsed.protocol === 'http:' && process.env.NODE_ENV === 'production') return null
-    if (!(await isSafeOutboundHost(parsed.hostname))) return null
+    if (!(await isSafeErpHost(parsed.hostname))) return null
     return rawUrl.replace(/\/+$/, '')
 }

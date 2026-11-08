@@ -90,7 +90,7 @@ export function encryptCredential(plaintext: string): string {
  * Decrypt an encrypted credential. If the value doesn't have the "enc:" prefix,
  * it's assumed to be plain text (backward compatible).
  */
-export function decryptCredential(stored: string): string {
+function decryptWithOwnKey(stored: string): string {
     const key = getEncryptionKey()
     if (!key) return stored
     if (!stored.startsWith(PREFIX)) return stored // Plain text (pre-encryption)
@@ -114,3 +114,29 @@ export function decryptCredential(stored: string): string {
     }
 }
 
+
+
+/** What a host gives the package for credentials (see ERPNextHostBindings.credentials). */
+export interface CredentialHost {
+    encrypt: (payload: any, site: unknown, plaintext: string) => Promise<string>
+    decrypt: (stored: string) => string
+}
+
+let credentialHost: CredentialHost | undefined
+
+/** Called once when the plugin is built. With a host, credentials follow the host's per-site keys. */
+export function bindCredentialHost(host?: CredentialHost): void {
+    credentialHost = host
+}
+
+/** Decrypt a stored credential: through the host when there is one (it reads this package's older form too), else with this package's own key. */
+export function decryptCredential(stored: string): string {
+    if (credentialHost && stored.startsWith(PREFIX)) return credentialHost.decrypt(stored)
+    return decryptWithOwnKey(stored)
+}
+
+/** Encrypt a credential for the site it belongs to: under that site's key through the host, else with this package's own key. */
+export async function encryptCredentialForSite(payload: any, site: unknown, plaintext: string): Promise<string> {
+    if (credentialHost) return credentialHost.encrypt(payload, site, plaintext)
+    return encryptCredential(plaintext)
+}

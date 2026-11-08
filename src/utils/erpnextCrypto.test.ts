@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, after } from 'node:test'
+import { describe, it, beforeEach, after, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { encryptCredential, decryptCredential, __resetEncryptionKey } from './erpnextCrypto'
 
@@ -50,5 +50,32 @@ describe('erpnextCrypto', () => {
         // Decrypt should not throw; it should return the raw stored value.
         assert.doesNotThrow(() => decryptCredential(tampered))
         assert.strictEqual(decryptCredential(tampered), tampered)
+    })
+})
+
+describe('credentials through a host that keeps a key per site', async () => {
+    const { bindCredentialHost, decryptCredential, encryptCredential, encryptCredentialForSite } = await import('./erpnextCrypto')
+    afterEach(() => bindCredentialHost(undefined))
+
+    it('uses the host to encrypt for a site and to decrypt, and still reads what the package wrote before', async () => {
+        const seen: Array<{ site: unknown; plaintext: string }> = []
+        bindCredentialHost({
+            encrypt: async (_payload, site, plaintext) => { seen.push({ site, plaintext }); return `enc:s1:HOST(${plaintext})` },
+            decrypt: (stored) => (stored.startsWith('enc:s1:HOST(') ? stored.slice('enc:s1:HOST('.length, -1) : `legacy:${stored}`),
+        })
+        assert.equal(await encryptCredentialForSite({}, 7, 'api-secret'), 'enc:s1:HOST(api-secret)')
+        assert.deepEqual(seen, [{ site: 7, plaintext: 'api-secret' }])
+        assert.equal(decryptCredential('enc:s1:HOST(api-secret)'), 'api-secret')
+        assert.equal(decryptCredential('enc:abc:def:ghi'), 'legacy:enc:abc:def:ghi', 'older values go to the host, which reads them too')
+        assert.equal(decryptCredential('plain text'), 'plain text', 'a value that was never encrypted is not sent to the host')
+    })
+
+    it('does exactly what it did before when no host is bound', async () => {
+        bindCredentialHost(undefined)
+        const stored = await encryptCredentialForSite({}, 7, 'x')
+        assert.ok(stored === 'x' || stored.startsWith('enc:'), 'plain when no key is set, otherwise encrypted with the package\'s own key')
+        assert.equal(stored, stored.startsWith('enc:') ? stored : 'x')
+        assert.equal(decryptCredential(stored), 'x')
+        assert.ok(!stored.startsWith('enc:s1:'), 'never the host\'s per-site form')
     })
 })

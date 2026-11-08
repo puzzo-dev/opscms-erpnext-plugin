@@ -3,7 +3,7 @@ import {
     ownerSiteFilter, pinnedOwnerOrganization, siteScopedCreate, siteScopedDelete, siteScopedRead, siteScopedUpdate,
 } from '../access/roles';
 import { organizationField } from '../fields/organizationField';
-import { encryptCredential, decryptCredential } from '../utils/erpnextCrypto';
+import { encryptCredentialForSite, decryptCredential } from '../utils/erpnextCrypto';
 import { validateErpUrl } from '../utils/ssrfGuard';
 import { getCredentials, authHeaders } from '../endpoints/erpnextProxy';
 import { getUserSiteId, type ERPNextCompany, type UserWithRole } from '../types';
@@ -21,9 +21,11 @@ const adminOrAboveField: FieldAccess = ({ req }) =>
 
 // ── Credential encryption hooks (reused by apiKey, apiSecret, webhookSecret) ──
 
-async function encryptBeforeChange({ value, originalDoc, field, req }: { value: unknown; originalDoc?: Record<string, unknown>; field: { name: string }, req: any }) {
+async function encryptBeforeChange({ value, originalDoc, data, field, req }: { value: unknown; originalDoc?: Record<string, unknown>; data?: Record<string, unknown>; field: { name: string }, req: any }) {
+    // The credentials belong to a site, so a host that keeps per-site keys encrypts them under that site's.
+    const site = data?.site ?? originalDoc?.site
     if (typeof value === 'string' && value && !value.startsWith('••••')) {
-        return encryptCredential(value)
+        return encryptCredentialForSite(req.payload, site, value)
     }
     if (typeof value === 'string' && value.startsWith('••••')) {
         // `previousDoc` is only ever populated in afterChange hooks — Payload's
@@ -49,7 +51,7 @@ async function encryptBeforeChange({ value, originalDoc, field, req }: { value: 
         // rawConfig has been decrypted by afterRead (due to preventMasking: true).
         // We must re-encrypt it to ensure it is stored encrypted.
         const decrypted = rawConfig[field.name];
-        return decrypted && typeof decrypted === 'string' ? encryptCredential(decrypted) : value;
+        return decrypted && typeof decrypted === 'string' ? await encryptCredentialForSite(req.payload, site, decrypted) : value;
     }
     return value
 }
@@ -313,8 +315,8 @@ export const ERPNextConfig: CollectionConfig = {
                                     },
                                     hooks: {
                                         beforeChange: [
-                                            async ({ value, originalDoc, req }) =>
-                                                await encryptBeforeChange({ value, originalDoc, field: { name: 'apiKey' }, req }),
+                                            async ({ value, originalDoc, data, req }) =>
+                                                await encryptBeforeChange({ value, originalDoc, data, field: { name: 'apiKey' }, req }),
                                         ],
                                         afterRead: [
                                             ({ value, req, context }) =>
@@ -336,8 +338,8 @@ export const ERPNextConfig: CollectionConfig = {
                                     },
                                     hooks: {
                                         beforeChange: [
-                                            async ({ value, originalDoc, req }) =>
-                                                await encryptBeforeChange({ value, originalDoc, field: { name: 'apiSecret' }, req }),
+                                            async ({ value, originalDoc, data, req }) =>
+                                                await encryptBeforeChange({ value, originalDoc, data, field: { name: 'apiSecret' }, req }),
                                         ],
                                         afterRead: [
                                             ({ value, req, context }) =>
@@ -379,8 +381,8 @@ export const ERPNextConfig: CollectionConfig = {
                                     admin: { description: 'Set automatically by the Connect via OAuth flow below.', readOnly: true, width: '50%' },
                                     hooks: {
                                         beforeChange: [
-                                            async ({ value, originalDoc, req }) =>
-                                                await encryptBeforeChange({ value, originalDoc, field: { name: 'oauthClientSecret' }, req }),
+                                            async ({ value, originalDoc, data, req }) =>
+                                                await encryptBeforeChange({ value, originalDoc, data, field: { name: 'oauthClientSecret' }, req }),
                                         ],
                                         afterRead: [
                                             ({ value, req, context }) =>
@@ -408,8 +410,8 @@ export const ERPNextConfig: CollectionConfig = {
                             admin: { hidden: true, description: 'Internal — OAuth2 access token, set by Connect via OAuth.' },
                             hooks: {
                                 beforeChange: [
-                                    async ({ value, originalDoc, req }) =>
-                                        await encryptBeforeChange({ value, originalDoc, field: { name: 'oauthAccessToken' }, req }),
+                                    async ({ value, originalDoc, data, req }) =>
+                                        await encryptBeforeChange({ value, originalDoc, data, field: { name: 'oauthAccessToken' }, req }),
                                 ],
                                 afterRead: [
                                     ({ value, req, context }) =>
@@ -423,8 +425,8 @@ export const ERPNextConfig: CollectionConfig = {
                             admin: { hidden: true, description: 'Internal — OAuth2 refresh token, used to silently renew an expired access token.' },
                             hooks: {
                                 beforeChange: [
-                                    async ({ value, originalDoc, req }) =>
-                                        await encryptBeforeChange({ value, originalDoc, field: { name: 'oauthRefreshToken' }, req }),
+                                    async ({ value, originalDoc, data, req }) =>
+                                        await encryptBeforeChange({ value, originalDoc, data, field: { name: 'oauthRefreshToken' }, req }),
                                 ],
                                 afterRead: [
                                     ({ value, req, context }) =>
@@ -522,8 +524,8 @@ export const ERPNextConfig: CollectionConfig = {
                             },
                             hooks: {
                                 beforeChange: [
-                                    async ({ value, originalDoc, req }) =>
-                                        await encryptBeforeChange({ value, originalDoc, field: { name: 'webhookSecret' }, req }),
+                                    async ({ value, originalDoc, data, req }) =>
+                                        await encryptBeforeChange({ value, originalDoc, data, field: { name: 'webhookSecret' }, req }),
                                 ],
                                 afterRead: [
                                     ({ value, req, context }) =>

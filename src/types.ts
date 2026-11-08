@@ -161,6 +161,15 @@ export interface ERPNextHostBindings {
      * to listing everything, ungrouped, same as before this binding existed.
      */
     siteCollectionsMap?: Record<string, string[]>
+    /**
+     * The host's own way of keeping credentials safe, so each site's ERP keys and OAuth tokens are encrypted under that site's own
+     * key instead of one key from this package's environment. Optional: without it the package uses `ERPNEXT_ENCRYPTION_KEY`
+     * exactly as before. `decrypt` must read both the values this package wrote itself and the host's own form.
+     */
+    credentials?: {
+        encrypt: (payload: any, site: unknown, plaintext: string) => Promise<string>
+        decrypt: (stored: string) => string
+    }
 }
 
 /**

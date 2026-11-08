@@ -22,6 +22,7 @@ import { erpGetHandler, erpPostHandler, erpPatchHandler, erpDeleteHandler } from
 import { createConnectionMonitorHook } from './hooks/connectionMonitor'
 import { createLinkErpnextCustomerEndpoint } from './endpoints/linkErpnextCustomer'
 import type { ERPNextHostBindings } from './types'
+import { bindCredentialHost } from './utils/erpnextCrypto'
 
 /** Minimal interface for the CMS action registry. The plugin registers into it without importing the full CMS type. */
 export interface ActionRegistryRef {
@@ -71,6 +72,8 @@ export interface ERPNextPluginOptions {
  * duplicated the CMS automation engine.
  */
 export function erpnextPlugin(options: ERPNextPluginOptions = {}): Plugin {
+    // A host that keeps a key per site has the package's credentials follow it; without one nothing changes.
+    bindCredentialHost(options.host?.credentials)
     const enableAnonymousUpload = options.enableAnonymousUpload !== false
 
     // Register all ERP actions into the CMS workflow engine's action registry.

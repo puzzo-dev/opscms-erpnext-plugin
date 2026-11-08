@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit';
 import type { ERPNextCredentials } from '../types';
 import { decryptCredential } from '../utils/erpnextCrypto';
-import { isSafeOutboundHost } from '../utils/ssrfGuard';
+import { isSafeErpHost } from '../utils/ssrfGuard';
 import { refreshOAuthToken } from './erpnextOAuth';
 
 /**
@@ -119,7 +119,7 @@ export async function getCredentials(
         // SSRF guard: erpnextUrl is admin-gated (see ERPNextConfig.ts) but a
         // multi-tenant site admin is not necessarily trusted with server-
         // infrastructure access — refuse loopback/link-local/private targets.
-        if (!(await isSafeOutboundHost(parsed.hostname))) {
+        if (!(await isSafeErpHost(parsed.hostname))) {
             payload.logger.error(`[ERPNext-Proxy] Refusing to use private/internal ERPNext URL: ${parsed.hostname}`)
             return false
         }

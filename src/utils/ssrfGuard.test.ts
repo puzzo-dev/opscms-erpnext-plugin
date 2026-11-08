@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 
-import { validateErpUrl, isSafeOutboundHost } from './ssrfGuard.js'
+import { validateErpUrl, isSafeOutboundHost, isSafeErpHost, privateErpUrlsAllowed } from './ssrfGuard.js'
 
 /**
  * Server-Side Request Forgery guard for outbound ERPNext calls.
@@ -147,5 +147,61 @@ describe('validateErpUrl', () => {
     it('refuses a URL whose port points at a local service', async () => {
         // The port is irrelevant — the host is what is checked.
         assert.equal(await validateErpUrl('https://127.0.0.1:9200'), null)
+    })
+})
+
+describe('the development switch for a local ERPNext', () => {
+    const ORIGINAL_SWITCH = process.env.ERPNEXT_ALLOW_PRIVATE_URLS
+    const flag = (value: string | undefined) => {
+        if (value === undefined) delete process.env.ERPNEXT_ALLOW_PRIVATE_URLS
+        else process.env.ERPNEXT_ALLOW_PRIVATE_URLS = value
+    }
+    afterEach(() => flag(ORIGINAL_SWITCH))
+
+    it('is off by default, so a local address stays refused', async () => {
+        flag(undefined)
+        assert.equal(privateErpUrlsAllowed(), false)
+        assert.equal(await validateErpUrl('http://localhost:8002'), null)
+        assert.equal(await isSafeErpHost('127.0.0.1'), false)
+    })
+
+    it('only the exact value "true" turns it on', async () => {
+        for (const value of ['1', 'yes', 'TRUE', '', 'false']) {
+            flag(value)
+            assert.equal(privateErpUrlsAllowed(), false, value)
+        }
+    })
+
+    it('lets localhost and literal private addresses through when on', async () => {
+        flag('true')
+        assert.equal(await validateErpUrl('http://localhost:8002/'), 'http://localhost:8002')
+        assert.equal(await validateErpUrl('http://erp.localhost:8002'), 'http://erp.localhost:8002')
+        assert.equal(await validateErpUrl('http://127.0.0.1:8002'), 'http://127.0.0.1:8002')
+        assert.equal(await validateErpUrl('http://192.168.1.20:8000'), 'http://192.168.1.20:8000')
+        assert.equal(await validateErpUrl('http://[::1]:8002'), 'http://[::1]:8002')
+    })
+
+    it('still refuses the cloud metadata range and unresolved or internal names when on', async () => {
+        flag('true')
+        assert.equal(await validateErpUrl('http://169.254.169.254/latest/meta-data'), null)
+        assert.equal(await validateErpUrl('http://metadata.internal'), null)
+        assert.equal(await validateErpUrl('http://printer.local'), null)
+        assert.equal(await validateErpUrl('http://this-host-does-not-exist.invalid'), null)
+        assert.equal(await isSafeErpHost('[fe80::1]'), false)
+    })
+
+    it('is never honoured in production, however it is set', async () => {
+        flag('true')
+        setNodeEnv('production')
+        assert.equal(privateErpUrlsAllowed(), false)
+        assert.equal(await isSafeErpHost('localhost'), false)
+        assert.equal(await validateErpUrl('https://localhost'), null)
+        assert.equal(await validateErpUrl('http://127.0.0.1'), null)
+    })
+
+    it('leaves the general guard (used by the webhook channel) untouched', async () => {
+        flag('true')
+        assert.equal(await isSafeOutboundHost('localhost'), false)
+        assert.equal(await isSafeOutboundHost('127.0.0.1'), false)
     })
 })
