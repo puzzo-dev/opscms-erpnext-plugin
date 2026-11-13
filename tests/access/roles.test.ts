@@ -113,3 +113,24 @@ describe('access helpers', () => {
         assert.strictEqual(await userMayAccessSite({ user: { role: 'editor' } }, 'site-a'), false)
     })
 })
+
+describe('an admin\'s site lookup', () => {
+    it('is one query for ids only, however many rules ask at the same moment', async () => {
+        const calls: Array<Record<string, unknown>> = []
+        const req = {
+            user: { role: 'admin', organization: 5 },
+            payload: {
+                find: async (args: Record<string, unknown>) => {
+                    calls.push(args)
+                    await new Promise((resolve) => setTimeout(resolve, 5))
+                    return { docs: [{ id: 1 }, { id: 2 }] }
+                },
+            },
+        } as any
+        const read = siteScopedRead()
+        const answers = await Promise.all(Array.from({ length: 12 }, () => read({ req } as any)))
+        assert.strictEqual(calls.length, 1, 'twelve collections share one lookup')
+        assert.deepStrictEqual(calls[0]!.select, { id: true }, 'never whole site rows')
+        for (const answer of answers) assert.deepStrictEqual(answer, { site: { in: [1, 2] } })
+    })
+})
