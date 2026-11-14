@@ -20,6 +20,28 @@ import { validateErpUrl } from '../utils/ssrfGuard'
  * the webhook is rejected as unsupported.
  */
 
+/** The most an inbound delivery may weigh. */
+const MAX_DELIVERY_BYTES = 1024 * 1024
+
+/** The body as text, or null as soon as it passes `max` bytes (the rest is not read). */
+async function readBounded(body: ReadableStream | null, max: number): Promise<string | null> {
+    if (!body) return ''
+    const reader = body.getReader()
+    const chunks: Uint8Array[] = []
+    let total = 0
+    for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        total += value.byteLength
+        if (total > max) {
+            await reader.cancel().catch(() => undefined)
+            return null
+        }
+        chunks.push(value)
+    }
+    return Buffer.concat(chunks).toString('utf8')
+}
+
 /** ERPNext delete-ish events. Everything else is treated as create/update (upsert). */
 function isDeleteEvent(event: string): boolean {
     return /trash|delete|cancel/i.test(event)
@@ -36,9 +58,11 @@ export const syncFromERPNextEndpoint: Endpoint = {
 
         try {
             // ── 1. Read raw body (needed for signature verification) ────
-            const rawBody = typeof req.body === 'string'
-                ? req.body
-                : await new Response(req.body as ReadableStream).text()
+            // Bounded while it is read: nothing is trusted yet (the signature is checked below), and a delivery is a few kilobytes.
+            const declared = Number(req.headers.get('content-length'))
+            if (Number.isFinite(declared) && declared > MAX_DELIVERY_BYTES) return Response.json({ error: 'Request body too large' }, { status: 413 })
+            const rawBody = typeof req.body === 'string' ? req.body : await readBounded(req.body as ReadableStream | null, MAX_DELIVERY_BYTES)
+            if (rawBody === null) return Response.json({ error: 'Request body too large' }, { status: 413 })
 
             const signature = req.headers.get('x-erpnext-signature') || ''
 
@@ -56,8 +80,9 @@ export const syncFromERPNextEndpoint: Endpoint = {
                 depth: 0,
                 overrideAccess: true,
             })
+            // The same answer for an unknown site, a site without ERPNext and a wrong signature: nothing is learned about what exists.
             if (sites.totalDocs === 0) {
-                return Response.json({ error: 'Site not found' }, { status: 404 })
+                return Response.json({ error: 'Invalid signature' }, { status: 401 })
             }
             const siteId = sites.docs[0].id
 
@@ -74,14 +99,14 @@ export const syncFromERPNextEndpoint: Endpoint = {
                 context: { preventMasking: true },
             })
             if (configs.totalDocs === 0) {
-                return Response.json({ error: 'No active ERPNext config for site' }, { status: 404 })
+                return Response.json({ error: 'Invalid signature' }, { status: 401 })
             }
             const webhookSecret = (configs.docs[0] as unknown as Record<string, unknown>).webhookSecret as string | undefined
 
             // ── 4. Verify signature (fail closed) ──────────────────────
             if (!webhookSecret) {
                 log('error', 'Webhook secret not configured for site — rejecting webhook', { siteSlug })
-                return Response.json({ error: 'Webhook secret not configured' }, { status: 403 })
+                return Response.json({ error: 'Invalid signature' }, { status: 401 })
             }
             if (!signature || !verifyERPNextWebhookSignature(rawBody, signature, webhookSecret)) {
                 log('warn', 'Webhook signature verification failed', { siteSlug })

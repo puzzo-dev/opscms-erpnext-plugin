@@ -1,3 +1,4 @@
+import { syncTargetProblem } from './target'
 import type { CollectionSlug, Payload, PayloadRequest, Where } from 'payload'
 import type { ERPNextCredentials, LogFn } from '../types'
 import { authHeaders } from '../endpoints/erpnextProxy'
@@ -395,6 +396,11 @@ export async function upsertErpRecord(
     creds?: ERPNextCredentials,
     log?: LogFn,
 ): Promise<{ action: 'created' | 'updated' | 'skipped'; id?: string | number; key?: unknown }> {
+    const refused = syncTargetProblem(req.payload, rule.targetCollection)
+    if (refused) {
+        log?.('error', `Not writing: ${refused}`, { doctype: rule.doctype })
+        return { action: 'skipped' }
+    }
     const keyMapping = getUpsertKeyMapping(rule)
     if (!keyMapping) {
         log?.('warn', 'No field mapping marked as the unique key — skipping', { doctype: rule.doctype })
@@ -481,6 +487,11 @@ export async function deleteErpRecord(
     siteId: string | number,
     log?: LogFn,
 ): Promise<{ action: 'deleted' | 'skipped'; id?: string | number }> {
+    const refused = syncTargetProblem(req.payload, rule.targetCollection)
+    if (refused) {
+        log?.('error', `Not deleting: ${refused}`, { doctype: rule.doctype })
+        return { action: 'skipped' }
+    }
     const keyMapping = getUpsertKeyMapping(rule)
     if (!keyMapping) return { action: 'skipped' }
     // Same transform as the upsert path — the stored value is the transformed one, so
