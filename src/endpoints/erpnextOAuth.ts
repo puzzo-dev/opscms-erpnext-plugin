@@ -2,6 +2,7 @@ import type { Endpoint, CollectionSlug } from 'payload'
 import { randomUUID } from 'crypto'
 import { getUserSiteId, getUserOrgId, type UserWithRole } from '../types'
 import { checkRateLimit, getClientIp } from '../utils/rateLimit'
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * ERPNext OAuth2 "Connect via login" flow.
@@ -98,7 +99,7 @@ function extractSessionCookie(res: Response): string | null {
 
 /** Follow exactly one redirect with the given session cookie, returning the Location header. */
 async function followRedirect(url: string, sessionCookie: string): Promise<string> {
-    const res = await fetch(url, {
+    const res = await erpFetch(url, {
         method: 'GET',
         headers: { Cookie: sessionCookie },
         redirect: 'manual',
@@ -118,7 +119,7 @@ async function exchangeCodeForToken(
     clientId: string,
     clientSecret: string,
 ): Promise<{ access_token: string; refresh_token?: string; expires_in?: number }> {
-    const tokenRes = await fetch(`${erpnextUrl}/api/method/frappe.integrations.oauth2.get_token`, {
+    const tokenRes = await erpFetch(`${erpnextUrl}/api/method/frappe.integrations.oauth2.get_token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -194,7 +195,7 @@ export const erpnextOAuthAutoConnectEndpoint: Endpoint = {
         // ── 1. Log in ────────────────────────────────────────────────────
         let sessionCookie: string
         try {
-            const loginRes = await fetch(`${erpnextUrl}/api/method/login`, {
+            const loginRes = await erpFetch(`${erpnextUrl}/api/method/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ usr: username, pwd: password }),
@@ -229,7 +230,7 @@ export const erpnextOAuthAutoConnectEndpoint: Endpoint = {
         let clientId: string
         let clientSecret: string
         try {
-            const lookupRes = await fetch(
+            const lookupRes = await erpFetch(
                 `${erpnextUrl}/api/resource/OAuth Client?filters=${encodeURIComponent(JSON.stringify([['app_name', '=', appName]]))}&limit_page_length=1`,
                 { headers: { Cookie: sessionCookie }, signal: AbortSignal.timeout(15000) },
             )
@@ -238,7 +239,7 @@ export const erpnextOAuthAutoConnectEndpoint: Endpoint = {
             const existingName = lookupBody.data?.[0]?.name
 
             if (existingName) {
-                const getRes = await fetch(`${erpnextUrl}/api/resource/OAuth Client/${encodeURIComponent(existingName)}`, {
+                const getRes = await erpFetch(`${erpnextUrl}/api/resource/OAuth Client/${encodeURIComponent(existingName)}`, {
                     headers: { Cookie: sessionCookie },
                     signal: AbortSignal.timeout(15000),
                 })
@@ -251,7 +252,7 @@ export const erpnextOAuthAutoConnectEndpoint: Endpoint = {
                 clientSecret = getBody.data.client_secret
                 // Keep the redirect URI current in case PAYLOAD_PUBLIC_SERVER_URL changed since this client was first created.
                 if (getBody.data.redirect_uris !== redirectUri) {
-                    await fetch(`${erpnextUrl}/api/resource/OAuth Client/${encodeURIComponent(existingName)}`, {
+                    await erpFetch(`${erpnextUrl}/api/resource/OAuth Client/${encodeURIComponent(existingName)}`, {
                         method: 'PUT',
                         headers: { Cookie: sessionCookie, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ redirect_uris: redirectUri, default_redirect_uri: redirectUri }),
@@ -259,7 +260,7 @@ export const erpnextOAuthAutoConnectEndpoint: Endpoint = {
                     }).catch(() => { /* non-fatal — the client still works with its original redirect URI */ })
                 }
             } else {
-                const createRes = await fetch(`${erpnextUrl}/api/resource/OAuth Client`, {
+                const createRes = await erpFetch(`${erpnextUrl}/api/resource/OAuth Client`, {
                     method: 'POST',
                     headers: { Cookie: sessionCookie, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -368,7 +369,7 @@ export async function refreshOAuthToken(
     refreshToken: string,
 ): Promise<{ accessToken: string; expiresAt: string } | null> {
     try {
-        const res = await fetch(`${erpnextUrl.replace(/\/+$/, '')}/api/method/frappe.integrations.oauth2.get_token`, {
+        const res = await erpFetch(`${erpnextUrl.replace(/\/+$/, '')}/api/method/frappe.integrations.oauth2.get_token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({

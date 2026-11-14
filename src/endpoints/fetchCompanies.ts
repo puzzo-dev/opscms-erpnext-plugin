@@ -4,6 +4,7 @@ import { type UserWithRole, type ERPNextCompany } from '../types';
 import { userMayAccessSite } from '../access/roles';
 import { getCredentials, authHeaders } from './erpnextProxy';
 import type { ERPNextCredentials } from '../types';
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * POST /api/erpnext-config/fetch-companies
@@ -149,7 +150,7 @@ export const fetchCompaniesEndpoint: Endpoint = {
             // ── Fetch companies from ERPNext ───────────────────────────
             const companiesUrl = `${normalizedUrl}/api/resource/Company?fields=["name","company_name","country","default_currency"]&limit_page_length=100`
 
-            const response = await fetch(companiesUrl, {
+            const response = await erpFetch(companiesUrl, {
                 method: 'GET',
                 headers: authHeaders(creds),
                 signal: AbortSignal.timeout(15000),

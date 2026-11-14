@@ -1,6 +1,7 @@
 import type { Endpoint, CollectionSlug } from 'payload'
 import { getUserOrgId, getUserSiteId, type UserWithRole } from '../types'
 import { getCredentials, authHeaders } from './erpnextProxy'
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * POST /api/retry-dead-letters
@@ -120,7 +121,7 @@ export const retryDeadLettersEndpoint: Endpoint = {
                     const controller = new AbortController()
                     const timeout = setTimeout(() => controller.abort(), 15_000)
 
-                    const response = await fetch(url, {
+                    const response = await erpFetch(url, {
                         method: 'POST',
                         headers: authHeaders(creds),
                         body: JSON.stringify(payload),

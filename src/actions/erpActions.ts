@@ -1,4 +1,5 @@
 import { getCredentials, authHeaders } from '../endpoints/erpnextProxy'
+import { erpFetch } from '../utils/erpFetch'
 
 const MAX_RETRIES = 3
 const BASE_DELAY_MS = 1000
@@ -18,7 +19,7 @@ async function erpCall(creds: any, path: string, method = 'GET', body?: object):
   let lastError: Error | undefined
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch(`${creds.url}${path}`, {
+      const res = await erpFetch(`${creds.url}${path}`, {
         method,
         headers: {
           ...authHeaders(creds),

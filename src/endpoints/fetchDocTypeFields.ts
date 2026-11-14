@@ -4,6 +4,7 @@ import { type UserWithRole } from '../types'
 import { userMayAccessSite } from '../access/roles'
 import { getCredentials, authHeaders } from './erpnextProxy'
 import { validateErpUrl } from '../utils/ssrfGuard'
+import { erpFetch } from '../utils/erpFetch'
 
 const FETCH_FIELDS_RATE_LIMIT_MAX = 30
 const FETCH_FIELDS_RATE_LIMIT_WINDOW_MS = 60_000
@@ -78,7 +79,7 @@ export const fetchDocTypeFieldsEndpoint: Endpoint = {
             const encodedDoctype = encodeURIComponent(doctype)
             const fieldsUrl = `${safeUrl}/api/resource/DocType/${encodedDoctype}`
 
-            const response = await fetch(fieldsUrl, {
+            const response = await erpFetch(fieldsUrl, {
                 method: 'GET',
                 headers: authHeaders(creds),
                 signal: AbortSignal.timeout(15_000),

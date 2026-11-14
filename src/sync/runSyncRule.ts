@@ -29,6 +29,7 @@ export {
     type ERPNextSyncRule,
     type MappingTransform,
 } from './transforms'
+import { erpFetch } from '../utils/erpFetch'
 
 /** Timeout for ancillary ERPNext API calls (status-mapped customer group promotion). */
 const CUSTOMER_PROMOTION_TIMEOUT_MS = 15000
@@ -49,7 +50,7 @@ async function promoteCustomerToGroup(
         filters: JSON.stringify([[lookupField, '=', lookupValue]]),
         fields: JSON.stringify(['name', 'customer_group']),
     })
-    const res = await fetch(`${creds.url}/api/resource/Customer?${qs}`, {
+    const res = await erpFetch(`${creds.url}/api/resource/Customer?${qs}`, {
         method: 'GET',
         headers: authHeaders(creds),
         signal: AbortSignal.timeout(CUSTOMER_PROMOTION_TIMEOUT_MS),
@@ -59,7 +60,7 @@ async function promoteCustomerToGroup(
     const customer = body.data?.[0]
     if (!customer) return false
     if (customer.customer_group === customerGroup) return true
-    const putRes = await fetch(`${creds.url}/api/resource/Customer/${encodeURIComponent(customer.name)}`, {
+    const putRes = await erpFetch(`${creds.url}/api/resource/Customer/${encodeURIComponent(customer.name)}`, {
         method: 'PUT',
         headers: authHeaders(creds),
         body: JSON.stringify({ customer_group: customerGroup }),
@@ -564,7 +565,7 @@ export async function backfillSyncRule(
     }
     const url = `${creds.url}/api/resource/${encodeURIComponent(rule.doctype)}?${qs}`
 
-    const res = await fetch(url, {
+    const res = await erpFetch(url, {
         method: 'GET',
         headers: authHeaders(creds),
         signal: AbortSignal.timeout(BACKFILL_TIMEOUT_MS),

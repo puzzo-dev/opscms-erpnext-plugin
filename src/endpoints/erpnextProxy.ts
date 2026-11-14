@@ -5,6 +5,7 @@ import type { ERPNextCredentials } from '../types';
 import { decryptCredential } from '../utils/erpnextCrypto';
 import { isSafeErpHost } from '../utils/ssrfGuard';
 import { refreshOAuthToken } from './erpnextOAuth';
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * ERPNext Proxy Endpoints
@@ -312,7 +313,7 @@ async function verifyProxyCaptcha(req: PayloadRequest, siteSlug: string | null |
         // — treat as not-verifiable (caller decides whether that blocks the request).
         if (!recaptcha?.enabled || !recaptcha.secretKey) return false
         if (!token) return false
-        const resp = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+        const resp = await erpFetch('https://www.google.com/recaptcha/api/siteverify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ secret: recaptcha.secretKey, response: token }).toString(),
@@ -574,7 +575,7 @@ export const erpnextProxySubmit: Endpoint = {
 
             const encodedDoctype = encodeURIComponent(doctype)
             if (!/^https?:\/\//i.test(creds.url)) return Response.json({ error: 'ERPNext integration not configured' }, { status: 500 })
-            const response = await fetch(`${creds.url}/api/resource/${encodedDoctype}`, {
+            const response = await erpFetch(`${creds.url}/api/resource/${encodedDoctype}`, {
                 method: 'POST',
                 headers: authHeaders(creds),
                 body: JSON.stringify(submitData),
@@ -665,7 +666,7 @@ export const erpnextProxyResource: Endpoint = {
 
             const qs = params.toString() ? `?${params}` : ''
 
-            const response = await fetch(`${endpoint}${qs}`, {
+            const response = await erpFetch(`${endpoint}${qs}`, {
                 method: 'GET',
                 headers: authHeaders(creds),
                 signal: AbortSignal.timeout(15000),
@@ -726,7 +727,7 @@ export const erpnextProxyHealth: Endpoint = {
             }
             if (!/^https?:\/\//i.test(creds.url)) return Response.json({ healthy: false, reason: 'ERPNext integration not configured' })
 
-            const response = await fetch(`${creds.url}/api/resource/User?limit_page_length=1`, {
+            const response = await erpFetch(`${creds.url}/api/resource/User?limit_page_length=1`, {
                 method: 'GET',
                 headers: authHeaders(creds),
                 signal: AbortSignal.timeout(10000),
@@ -789,7 +790,7 @@ export const erpnextProxyUpload: Endpoint = {
             erpFormData.append('docname', docname);
             erpFormData.append('is_private', '1');
 
-            const response = await fetch(`${creds.url}/api/method/upload_file`, {
+            const response = await erpFetch(`${creds.url}/api/method/upload_file`, {
                 method: 'POST',
                 headers: {
                     Authorization: authHeaders(creds).Authorization,

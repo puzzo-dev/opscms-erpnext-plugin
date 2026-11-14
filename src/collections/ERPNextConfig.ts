@@ -7,6 +7,7 @@ import { encryptCredentialForSite, decryptCredential } from '../utils/erpnextCry
 import { validateErpUrl } from '../utils/ssrfGuard';
 import { getCredentials, authHeaders } from '../endpoints/erpnextProxy';
 import { getUserSiteId, type ERPNextCompany, type UserWithRole } from '../types';
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * Field-level guard: only admins/super-admins (or trusted server calls using
@@ -120,7 +121,7 @@ const autoFetchFromERPNext: CollectionAfterChangeHook = async ({ doc, previousDo
 
     try {
         // ── Fetch companies ────────────────────────────────────────
-        const companiesRes = await fetch(
+        const companiesRes = await erpFetch(
             `${normalizedUrl}/api/resource/Company?fields=["name","company_name","country","default_currency"]&limit_page_length=100`,
             { method: 'GET', headers, signal: AbortSignal.timeout(15000) },
         )

@@ -4,6 +4,7 @@ import { type UserWithRole } from '../types';
 import { userMayAccessSite } from '../access/roles';
 import { getCredentials, authHeaders } from './erpnextProxy';
 import { validateErpUrl } from '../utils/ssrfGuard';
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * GET /api/erpnext-customer-groups?siteId={siteId}
@@ -80,7 +81,7 @@ export const fetchCustomerGroupsEndpoint: Endpoint = {
 
             const groupsUrl = `${safeUrl}/api/resource/Customer Group?fields=["name","is_group"]&limit_page_length=500`
 
-            const response = await fetch(groupsUrl, {
+            const response = await erpFetch(groupsUrl, {
                 method: 'GET',
                 headers: authHeaders(creds),
                 signal: AbortSignal.timeout(15_000),

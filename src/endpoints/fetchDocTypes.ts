@@ -4,6 +4,7 @@ import { type UserWithRole } from '../types';
 import { userMayAccessSite } from '../access/roles';
 import { getCredentials, authHeaders } from './erpnextProxy';
 import { validateErpUrl } from '../utils/ssrfGuard';
+import { erpFetch } from '../utils/erpFetch'
 
 /**
  * GET /api/erpnext-doctypes?siteId={siteId}&siteSlug={siteSlug}
@@ -101,7 +102,7 @@ export const fetchDocTypesEndpoint: Endpoint = {
 
             const doctypesUrl = `${safeUrl}/api/resource/DocType?fields=["name","module","istable","issingle"]&order_by=${encodeURIComponent('name asc')}&limit_page_length=${DOCTYPES_PAGE_SIZE}&limit_start=${limitStart}`
 
-            const response = await fetch(doctypesUrl, {
+            const response = await erpFetch(doctypesUrl, {
                 method: 'GET',
                 headers: authHeaders(creds),
                 signal: AbortSignal.timeout(15_000),
