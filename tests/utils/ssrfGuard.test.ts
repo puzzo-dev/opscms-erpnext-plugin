@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 
-import { validateErpUrl, isSafeOutboundHost, isSafeErpHost, privateErpUrlsAllowed } from '../../src/utils/ssrfGuard.js'
+import { validateErpUrl, isSafeOutboundHost, isSafeErpHost, isPrivateOrReservedIpv6, privateErpUrlsAllowed } from '../../src/utils/ssrfGuard.js'
 
 /**
  * Server-Side Request Forgery guard for outbound ERPNext calls.
@@ -205,3 +205,26 @@ describe('the development switch for a local ERPNext', () => {
         assert.equal(await isSafeOutboundHost('127.0.0.1'), false)
     })
 })
+
+/**
+ * The same address in another spelling is the same address. Node's URL parser writes ::ffff:127.0.0.1 as ::ffff:7f00:1, a form the text matching
+ * missed, so a tenant could point the ERPNext address at loopback or the cloud metadata service as an IPv4-mapped IPv6 address.
+ */
+describe('an IPv4 address written as IPv6', () => {
+    it('is judged by the IPv4 address inside it, whichever form carries it', async () => {
+        for (const raw of ['http://[::ffff:127.0.0.1]/', 'http://[::ffff:169.254.169.254]/', 'https://[::ffff:10.0.0.5]/', 'http://[::127.0.0.1]/', 'http://[64:ff9b::7f00:1]/', 'http://[2002:7f00:1::]/']) {
+            assert.equal(await isSafeOutboundHost(new URL(raw).hostname), false, raw)
+        }
+    })
+
+    it('leaves a public address alone, in either family', async () => {
+        assert.equal(await isSafeOutboundHost(new URL('https://[::ffff:8.8.8.8]/').hostname), true)
+        assert.equal(isPrivateOrReservedIpv6('2606:4700:4700::1111'), false)
+    })
+
+    it('treats something that is not an address as unsafe', () => {
+        assert.equal(isPrivateOrReservedIpv6('not-an-ip'), true)
+        assert.equal(isPrivateOrReservedIpv6('1::2::3'), true)
+    })
+})
+

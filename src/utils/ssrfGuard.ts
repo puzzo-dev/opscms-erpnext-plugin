@@ -58,30 +58,61 @@ export function isPrivateOrReservedIpv4(ip: string): boolean {
 
 // ── IPv6 range checks ─────────────────────────────────────────────────
 
+/** Eight 16-bit groups of an IPv6 address (any spelling: `::` runs, an IPv4 tail, upper case), or null when it is not one. */
+export function expandIpv6(ip: string): number[] | null {
+    let text = ip.toLowerCase().replace(/^\[|\]$/g, '')
+    const zone = text.indexOf('%')
+    if (zone !== -1) text = text.slice(0, zone)
+    // An IPv4 tail (::ffff:127.0.0.1) is two groups.
+    const tail = text.match(/(\d+\.\d+\.\d+\.\d+)$/)
+    if (tail) {
+        const octets = tail[1].split('.').map(Number)
+        if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null
+        text = `${text.slice(0, text.length - tail[1].length)}${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`
+    }
+    const halves = text.split('::')
+    if (halves.length > 2) return null
+    const parse = (part: string): number[] | null => {
+        if (part === '') return []
+        const groups = part.split(':')
+        if (groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null
+        return groups.map((g) => parseInt(g, 16))
+    }
+    const head = parse(halves[0])
+    const rest = halves.length === 2 ? parse(halves[1]) : []
+    if (!head || !rest) return null
+    if (halves.length === 1) return head.length === 8 ? head : null
+    const missing = 8 - head.length - rest.length
+    if (missing < 1) return null
+    return [...head, ...Array<number>(missing).fill(0), ...rest]
+}
+
+const ipv4Of = (hi: number, lo: number): string => `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`
+
 /**
- * Comprehensive private/reserved IPv6 check. Superset of both versions:
- * loopback, unspecified, link-local, unique local, multicast, documentation,
- * and both IPv4-mapped forms (dotted-decimal and hex).
+ * Comprehensive private/reserved IPv6 check, on the parsed address rather than its text (the same address has many spellings, and Node's URL
+ * parser writes ::ffff:127.0.0.1 as ::ffff:7f00:1). Loopback, unspecified, link-local (fe80::/10), unique local (fc00::/7), multicast, documentation
+ * and Teredo, and every form that carries an IPv4 address (mapped ::ffff:a.b.c.d, compatible ::a.b.c.d, translated, NAT64 64:ff9b::/96, 6to4 2002::/16):
+ * those are judged by the IPv4 address inside them. Anything that is not an IPv6 address is treated as unsafe.
  */
 export function isPrivateOrReservedIpv6(ip: string): boolean {
-    const norm = ip.toLowerCase()
-    if (norm === '::1' || norm === '::') return true          // loopback / unspecified
-    if (norm.startsWith('fe80:')) return true                 // link-local
-    if (norm.startsWith('fc') || norm.startsWith('fd')) return true  // unique local fc00::/7
-    if (norm.startsWith('ff')) return true                    // multicast ff00::/8
-    if (norm.startsWith('2001:db8:')) return true             // documentation 2001:db8::/32
-    // IPv4-mapped IPv6 in dotted-decimal form: ::ffff:127.0.0.1
-    const mappedDotted = norm.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
-    if (mappedDotted) return isPrivateOrReservedIpv4(mappedDotted[1])
-    // IPv4-mapped IPv6 in hex form: ::ffff:7f00:1 (== 127.0.0.1)
-    // Also matches full-form: 0:0:0:0:0:ffff:7f00:1
-    const mappedHex = norm.match(/^(?:0:){5}ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/)
-    if (mappedHex) {
-        const hi = parseInt(mappedHex[1], 16)
-        const lo = parseInt(mappedHex[2], 16)
-        const ipv4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`
-        return isPrivateOrReservedIpv4(ipv4)
-    }
+    const g = expandIpv6(ip)
+    if (!g) return true
+    const [a, b, c, d, e, f, x, y] = g
+    if (g.every((n) => n === 0)) return true                      // :: unspecified
+    if (g.slice(0, 7).every((n) => n === 0) && y === 1) return true // ::1 loopback
+    if ((a & 0xffc0) === 0xfe80) return true                      // fe80::/10 link-local
+    if ((a & 0xfe00) === 0xfc00) return true                      // fc00::/7 unique local
+    if ((a & 0xff00) === 0xff00) return true                      // ff00::/8 multicast
+    if (a === 0x2001 && b === 0x0db8) return true                 // 2001:db8::/32 documentation
+    if (a === 0x2001 && b === 0) return true                      // 2001::/32 Teredo (tunnels carry an embedded address)
+    if (a === 0x0064 && b === 0xff9b && c === 1) return true      // 64:ff9b:1::/48 local-use NAT64
+    // Forms that carry an IPv4 address: judge the address inside.
+    if (a === 0 && b === 0 && c === 0 && d === 0 && e === 0 && f === 0xffff) return isPrivateOrReservedIpv4(ipv4Of(x, y)) // ::ffff:a.b.c.d mapped
+    if (a === 0 && b === 0 && c === 0 && d === 0 && e === 0xffff && f === 0) return isPrivateOrReservedIpv4(ipv4Of(x, y))  // ::ffff:0:a.b.c.d translated
+    if (a === 0 && b === 0 && c === 0 && d === 0 && e === 0 && f === 0) return isPrivateOrReservedIpv4(ipv4Of(x, y))       // ::a.b.c.d compatible
+    if (a === 0x0064 && b === 0xff9b && c === 0 && d === 0 && e === 0 && f === 0) return isPrivateOrReservedIpv4(ipv4Of(x, y)) // 64:ff9b::/96 NAT64
+    if (a === 0x2002) return isPrivateOrReservedIpv4(ipv4Of(b, c))  // 2002::/16 6to4: the IPv4 address is in groups 2 and 3
     return false
 }
 
