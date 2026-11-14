@@ -517,10 +517,33 @@ export const ERPNextConfig: CollectionConfig = {
                     description: 'Shared secret for inbound ERPNext webhooks. What gets synced (DocType, target collection, field mappings, status mapping, customer-group promotion) is defined entirely in the ERPNext Sync Rules collection — one or more rules per site, one per DocType.',
                     fields: [
                         {
+                            // The address ERPNext must call, made for this site: copy it into ERPNext, nothing else has to be created.
+                            name: 'webhookUrl',
+                            type: 'text',
+                            virtual: true,
+                            label: 'Webhook address',
+                            admin: {
+                                readOnly: true,
+                                description: 'Paste this as the Request URL of each ERPNext Webhook (Request Method POST, Request Structure JSON). It is made for this site; nothing else has to be created. What a delivery does is set by the sync rules.',
+                            },
+                            hooks: {
+                                afterRead: [
+                                    async ({ siblingData, req }) => {
+                                        const server = (process.env.PAYLOAD_PUBLIC_SERVER_URL ?? '').replace(/\/+$/, '')
+                                        const ref = siblingData?.site
+                                        const id = typeof ref === 'object' && ref ? (ref as { id?: string | number }).id : (ref as string | number | undefined)
+                                        if (!server || id == null) return ''
+                                        const site = (typeof ref === 'object' && ref && 'slug' in ref ? ref : await req.payload.findByID({ collection: 'sites', id, depth: 0, overrideAccess: true }).catch(() => null)) as { slug?: string } | null
+                                        return site?.slug ? `${server}/api/erpnext-sync?site=${encodeURIComponent(site.slug)}` : ''
+                                    },
+                                ],
+                            },
+                        },
+                        {
                             name: 'webhookSecret',
                             type: 'text',
                             admin: {
-                                description: 'HMAC-SHA256 secret for verifying inbound ERPNext webhooks. Set in ERPNext → Webhook → Secret. Point ERPNext webhooks at POST /api/erpnext-sync?site=<your-site-slug>.',
+                                description: 'HMAC-SHA256 secret for verifying inbound ERPNext webhooks. Choose one here and enter the same one in ERPNext → Webhook → Secret. Deliveries without a matching signature are refused.',
                             },
                             hooks: {
                                 beforeChange: [
