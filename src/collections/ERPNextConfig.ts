@@ -188,7 +188,7 @@ export const ERPNextConfig: CollectionConfig = {
     admin: {
         useAsTitle: 'label',
         defaultColumns: ['label', 'erpnextUrl', 'connectionStatus', 'erpnextCompany', 'isActive', 'createdAt'],
-        group: 'Integrations',
+        group: 'Opscloud Sync',
     },
     access: {
         read: siteScopedRead(),

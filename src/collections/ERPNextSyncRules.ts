@@ -105,7 +105,7 @@ export const ERPNextSyncRules: CollectionConfig = {
     admin: {
         useAsTitle: 'label',
         defaultColumns: ['label', 'doctype', 'targetCollection', 'isActive', 'lastBackfillAt'],
-        group: 'Integrations',
+        group: 'Opscloud Sync',
         description: 'Map ERPNext DocTypes to Payload collections. Inbound sync is driven entirely by these rules.',
     },
     access: {

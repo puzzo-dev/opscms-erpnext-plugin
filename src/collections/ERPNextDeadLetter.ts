@@ -12,7 +12,7 @@ export const ERPNextDeadLetter: CollectionConfig = {
     admin: {
         useAsTitle: 'submissionId',
         defaultColumns: ['submissionId', 'docType', 'errorCategory', 'retryCount', 'status', 'createdAt'],
-        group: 'Integrations',
+        group: 'Opscloud Sync',
         description: 'Failed ERPNext forwards awaiting retry or manual resolution',
     },
     access: {
