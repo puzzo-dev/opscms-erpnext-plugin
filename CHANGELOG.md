@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.7.0
+
+A sync rule can be set to **only update records that already exist** (`updateOnly`, "Only update records that already exist" on the rule's Mapping tab): what ERPNext sends for a record the CMS does not have is skipped (nothing is made), and a deletion in ERPNext deletes nothing. For a rule that adds information to records another rule made, such as a rule on ERPNext's Item Price (the selling price of an item, a DocType of its own) that puts the price on the catalogue items an Item rule brought in. The platform needs a column for it (`erpnext_sync_rules.update_only`, CMS migration 20261117_000300); a rule without the option behaves exactly as before.
+
 ## 2.6.2
 
 ### Fixed

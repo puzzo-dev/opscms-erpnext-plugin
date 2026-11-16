@@ -421,6 +421,12 @@ export async function upsertErpRecord(
     if (rule.syncedAtField) data[rule.syncedAtField] = new Date().toISOString()
     const existing = await findExisting(req, rule, keyMapping, keyValue, siteId)
 
+    // A rule that only updates (a price list's prices on the items already in the catalogue) never makes a record of what it does not know.
+    if (!existing && rule.updateOnly) {
+        log?.('info', `Skipped: there is no ${rule.targetCollection} record for this key, and this rule only updates`, { key: keyValue })
+        return { action: 'skipped' }
+    }
+
     if (existing) {
         await req.payload.update({
             collection: rule.targetCollection as CollectionSlug,
@@ -487,6 +493,8 @@ export async function deleteErpRecord(
     siteId: string | number,
     log?: LogFn,
 ): Promise<{ action: 'deleted' | 'skipped'; id?: string | number }> {
+    // A rule that only updates records that exist deletes nothing: a price taken out of ERPNext is not the item leaving the catalogue.
+    if (rule.updateOnly) return { action: 'skipped' }
     const refused = syncTargetProblem(req.payload, rule.targetCollection)
     if (refused) {
         log?.('error', `Not deleting: ${refused}`, { doctype: rule.doctype })

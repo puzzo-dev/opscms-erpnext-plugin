@@ -201,6 +201,15 @@ export const ERPNextSyncRules: CollectionConfig = {
                                 },
                             ],
                         },
+                        {
+                            name: 'updateOnly',
+                            type: 'checkbox',
+                            defaultValue: false,
+                            label: 'Only update records that already exist',
+                            admin: {
+                                description: 'Never make a new record from what ERPNext sends, and never delete one when ERPNext deletes. For a rule that adds information to records another rule made, e.g. prices (DocType "Item Price") onto the items an Item rule brought in.',
+                            },
+                        },
                     ],
                 },
                 // ── Tab 2: the actual per-field data copy, separate from the one-time identity/key setup above ──

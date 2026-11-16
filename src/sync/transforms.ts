@@ -87,6 +87,8 @@ export interface ERPNextSyncRule {
     customerGroupField?: string | null
     isActive?: boolean
     backfillOnSave?: boolean
+    /** Only records that already exist are changed: a record ERPNext sends that is not here yet is skipped (nothing is made), and a deletion in ERPNext deletes nothing here. */
+    updateOnly?: boolean | null
 }
 
 /** Coerce an all-digit constant to a number so relationship (int id) fields validate. */
