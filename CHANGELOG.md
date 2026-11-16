@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.6.2
+
+### Fixed
+
+- **Every request to the ERPNext server is made to an address judged at the moment of connecting**, so a name that was public when its URL was validated cannot be pointed inward afterwards.
+- **The inbound sync refuses to write into accounts, into collections that have no site, or into Payload's own collections** (a site admin owns the rule, the secret and the data, so could otherwise have made a super-admin). Its body is read within a limit, and an unknown site, a missing config and a bad signature are answered alike.
+
+## 2.6.1
+
+### Fixed
+
+- **The address guard judges an IPv6 address by the IPv4 address inside it** (mapped, compatible, NAT64, 6to4), so `::ffff:127.0.0.1` as Node writes it (`::ffff:7f00:1`) is no longer treated as public.
+
+## 2.6.0
+
+### Added
+
+- The ERPNext config shows this site's webhook address, read-only. The plugin's collections sit under "Opscloud Sync" in the admin menu.
+
 ## 2.5.1
 
 ### Fixed
