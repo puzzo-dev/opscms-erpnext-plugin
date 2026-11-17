@@ -103,6 +103,8 @@ export function isPrivateOrReservedIpv6(ip: string): boolean {
     if (g.slice(0, 7).every((n) => n === 0) && y === 1) return true // ::1 loopback
     if ((a & 0xffc0) === 0xfe80) return true                      // fe80::/10 link-local
     if ((a & 0xfe00) === 0xfc00) return true                      // fc00::/7 unique local
+    if ((a & 0xffc0) === 0xfec0) return true                      // fec0::/10 site-local (deprecated, but still routed inside some networks)
+    if (a === 0x0100 && b === 0 && c === 0 && d === 0) return true // 100::/64 discard-only
     if ((a & 0xff00) === 0xff00) return true                      // ff00::/8 multicast
     if (a === 0x2001 && b === 0x0db8) return true                 // 2001:db8::/32 documentation
     if (a === 0x2001 && b === 0) return true                      // 2001::/32 Teredo (tunnels carry an embedded address)
@@ -134,6 +136,7 @@ const INTERNAL_HOST_SUFFIXES = ['.localhost', '.internal', '.local']
  * error. Checks ALL resolved addresses so a DNS-rebinding attack (a public
  * name that resolves to 169.254.169.254) is blocked.
  */
+/** @internal Judges a host once, at the moment it is asked; a later connection can resolve the name to something else. Anything that goes on to CONNECT must use pinnedFetch (erpFetch.ts), which judges the address it connects to. Not exported from the package. */
 export async function isSafeOutboundHost(hostname: string): Promise<boolean> {
     const host = hostname.replace(/^\[|\]$/g, '') // strip IPv6 brackets
 
@@ -192,6 +195,7 @@ export async function isSafeErpHost(hostname: string): Promise<boolean> {
  * Throws an Error if the URL is not a safe public http(s) target.
  * Used by the CMS webhook notification channel.
  */
+/** @internal Same as isSafeOutboundHost: a check before a fetch, not a protection for the fetch. Use pinnedFetch to connect. Not exported from the package. */
 export async function assertSafePublicUrl(rawUrl: string): Promise<void> {
     let url: URL
     try {
